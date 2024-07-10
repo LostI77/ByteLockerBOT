@@ -16,6 +16,96 @@ bot = commands.Bot(command_prefix='-', intents=intents)
 
 # Palabras malsonantes y listas negras de spam
 BLACKLIST = ["badword1", "badword2", "spamlink.com"]
+# Canal donde se enviarán las respuestas para revisión si el puntaje es bajo
+REVIEW_CHANNEL_ID = 1260581358380646451  # Reemplaza con el ID del canal de revisión
+
+# Preguntas 
+questions = {
+    "¿Pregunta 1?\n1. Lorem ipsum\n2. Dolor sit amet\n3. Consectetur\n4. Adipiscing elit": (2, 20),  # (Correct answer, points)
+    "¿Pregunta 2?\n1. Sed do eiusmod\n2. Tempor incididunt\n3. Ut labore et dolore\n4. Magna aliqua": (2, 30),
+    "¿Pregunta 3?\n1. Ut enim ad minim\n2. Veniam, quis nostrud\n3. Exercitation ullamco\n4. Laboris nisi": (2, 25),
+    # Add more questions in the same format
+}
+
+# Canal donde se enviarán las preguntas a los nuevos miembros
+WELCOME_CHANNEL_ID = 1260581245822435370  # Reemplaza con el ID del canal de bienvenida
+
+# Verificar la conexión
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return  # Ignorar mensajes propios
+    
+    log_command(message)  
+    await bot.process_commands(message)
+
+def log_command(message):
+    if message.content.startswith(bot.command_prefix):  # Checkea si es un comando
+        command_name = message.content.split()[0][len(bot.command_prefix):]
+        print(f"Command '{command_name}' triggered by {message.author} in {message.channel}")
+
+
+async def conduct_survey(member, channel):
+    total_score = 0
+    responses = []
+
+    def check(m):
+        return m.author == member and m.channel == channel and m.content.isdigit() and 1 <= int(m.content) <= 4
+
+    for question, (correct_answer, points) in questions.items():
+        await channel.send(question)
+        try:
+            msg = await bot.wait_for('message', check=check, timeout=60)
+            user_answer = int(msg.content)
+            responses.append((question, user_answer))
+            if user_answer == correct_answer:
+                total_score += points  # Suma puntos con las repuesta correctas
+        except asyncio.TimeoutError:
+            await channel.send(f'{member.mention}, no respondiste a tiempo. Intenta nuevamente.')
+            return
+
+    # Envía las respuestas
+    review_channel = bot.get_channel(REVIEW_CHANNEL_ID)
+    if review_channel:
+        response_str = "\n".join([f"{q}: {r}" for q, r in responses])
+        await review_channel.send(f'Respuestas de {member.mention}:\n{response_str}')
+
+    # Asigna rol si aprobó
+    if total_score >= 75:
+        await channel.send(f'{member.mention}, ¡felicitaciones! Has pasado la encuesta con {total_score} puntos.')
+        # Asigna rol
+        role_id = 1260594141629382666  
+        role = channel.guild.get_role(role_id) 
+        if role:
+            await member.add_roles(role)
+            await channel.send(f'Te he asignado el rol {role.name}.')
+        else:
+            await channel.send('No se pudo encontrar el rol especificado.')
+        await channel.send(f'{member.mention}, tus respuestas están siendo revisadas por un administrador. Obtuviste {total_score} puntos.')
+
+# @bot.event
+# async def on_member_join(member):
+#     welcome_channel = bot.get_channel(WELCOME_CHANNEL_ID)
+#     if welcome_channel is not None:
+#         await welcome_channel.send(f'¡Bienvenido {member.mention}! Responde las siguientes preguntas:')
+#         await conduct_survey(member, welcome_channel)
+
+@bot.command(name='encuesta')
+async def start_survey(ctx):
+    print("Encuesta command triggered!") 
+    await ctx.send(f'{ctx.author.mention}, iniciaré la encuesta contigo.')
+    print(f"Comando encuesta iniciado por {ctx.author}")
+    await conduct_survey(ctx.author, ctx.channel)
+
+@bot.command(name='ping')
+async def ping(ctx):
+    await ctx.send('pong')
+    
+def log_command(message):
+    if message.content.startswith(bot.command_prefix):  # Checkea si es un comando
+        command_name = message.content.split()[0][len(bot.command_prefix):]
+        print(f"Command '{command_name}' triggered by {message.author} in {message.channel}")
+
 
 # Almacenar mensajes
 message_logs = {}
