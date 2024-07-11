@@ -188,12 +188,34 @@ async def skip(ctx):
         await ctx.send("No hay ninguna canción en reproducción.")
 
 @bot.command()
+async def scanip(ctx, ip):
+    # Escanear una IP con VirusTotal
+    api_key = os.getenv('VIRUSTOTAL_TOKEN')
+    scan_ip = f"https://www.virustotal.com/api/v3/ip_addresses/{ip}"
+    headers = {
+        'accept': 'application/json',
+        'x-apikey': api_key
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(scan_ip, headers=headers) as resp:
+            if resp.status == 200:
+                result = await resp.json()
+                resumen = f"IP: {ip}\n"
+                resumen += f"Puntuación de VirusTotal: {result.get('data', {}).get('attributes', {}).get('last_analysis_stats', {}).get('malicious', 0)}\n"
+                await ctx.send(resumen)
+            else:
+                await ctx.send("Error al escanear la IP.")
+
+
+@bot.command()
 async def scanurl(ctx, url):
     # Usar VirusTotal API para escanear la URL (requiere una clave de API)
     api_key = os.getenv("VIRUSTOTAL_TOKEN")
-    scan_url = f"https://www.virustotal.com/api/v3/urls"
+    scan_url = f"https://www.virustotal.com/api/v3/domains/{url}"
     headers = {
-        "x-apikey": api_key
+        'accept': 'application/json',
+        'x-apikey': api_key
     }
     data = {
         "url": url
@@ -225,8 +247,10 @@ async def scanfile(ctx):
                 api_key = os.getenv("VIRUSTOTAL_TOKEN")
                 scan_url = f"https://www.virustotal.com/api/v3/files"
                 headers = {
-                    "x-apikey": api_key
+                    'accept': 'application/json',
+                    'x-apikey': api_key               
                 }
+                    
                 files = {
                     "file": (file_name, file_data)
                 }
