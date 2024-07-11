@@ -1,110 +1,156 @@
-### Documentación del Bot de Discord
+## Documentación de ByteLocker
 
-El bot ByteLocker está desarrollado en Python utilizando la biblioteca `discord.py` y ofrece diversas funcionalidades como moderación de mensajes, encuestas, logging de mensajes y más. A continuación se detallan las características y el uso del bot.
+### Introducción
+ByteLocker es un bot de Discord diseñado para moderar, realizar encuestas de conocimientos en ciberseguridad, tocar música, publicar noticias, y proporcionar herramientas de escaneo de IP y URL a través de VirusTotal.
 
-#### Requisitos
+### Dependencias
+- `dotenv`
+- `discord`
+- `discord.ext`
+- `json`
+- `os`
+- `yt_dlp`
+- `aiohttp`
+- `asyncio`
+- `random`
 
-- Python 3.6+
-- Discord.py
-- Youtube-dl (yt_dlp)
-- aiohttp
-- dotenv
+### Variables de Entorno
+El bot utiliza variables de entorno que deben estar definidas en un archivo `.env`:
+- `DISCORD_TOKEN`: Token del bot de Discord.
+- `NEWS_CHANNEL_ID`: ID del canal donde se publicarán noticias.
+- `REVIEW_CHANNEL_ID`: ID del canal donde se revisarán las respuestas de las encuestas.
+- `VERIFIED_ROLE`: ID del rol que se asignará a los usuarios que aprueben la encuesta.
+- `VIRUSTOTAL_TOKEN`: Token de API de VirusTotal.
 
-#### Instalación
+### Funcionalidades Principales
 
-1. Clona el repositorio o descarga el código fuente.
-2. Crea un archivo `.env` en el mismo directorio con el siguiente contenido:
-   ```env
-   DISCORD_TOKEN=your_discord_token
-   VIRUSTOTAL_TOKEN=your_virustotal_api_key
-   ```
-3. Instala las dependencias:
-   ```sh
-   pip install discord.py yt-dlp aiohttp python-dotenv
-   ```
+#### 1. Palabras Prohibidas (BLACKLIST)
+El bot eliminará mensajes que contengan palabras o enlaces especificados en la lista `BLACKLIST`.
 
-#### Funcionalidades
+#### 2. Encuestas de Ciberseguridad
+El bot tiene un conjunto de preguntas de ciberseguridad categorizadas en tres niveles de dificultad: fáciles, medias y difíciles.
 
-##### 1. Moderación de Mensajes
+##### Comando `-preguntas`
+Muestra todas las preguntas de la encuesta.
 
-El bot elimina mensajes que contengan palabras malsonantes o enlaces de spam definidos en la lista negra.
+##### Comando `-encuesta`
+Inicia una encuesta para el usuario que ejecuta el comando. Opcionalmente, el comando puede aceptar un modo "dev" para asignar directamente el rol verificado.
 
 ```python
-BLACKLIST = ["badword1", "badword2", "spamlink.com"] (Está en Desarrollo)
+@bot.command(name='encuesta')
+async def start_survey(ctx, modo: str = None):
 ```
 
-##### 2. Encuestas
+#### 3. Publicación de Noticias (Comentado)
+Esta sección, actualmente comentada, permite al bot publicar noticias cada hora en un canal especificado.
 
-El bot realiza una encuesta a los usuarios con preguntas predefinidas. Dependiendo de las respuestas, se asigna un puntaje y, si es suficiente, se otorga un rol al usuario.
+#### 4. Logs de Mensajes
+
+##### Comando `-logs`
+Permite a los usuarios con el rol "Co-founder" listar y guardar los logs de mensajes en un canal específico.
 
 ```python
-questions = {
-    "¿Pregunta 1?\n1. Lorem ipsum\n2. Dolor sit amet\n3. Consectetur\n4. Adipiscing elit": (2, 20),
-    "¿Pregunta 2?\n1. Sed do eiusmod\n2. Tempor incididunt\n3. Ut labore et dolore\n4. Magna aliqua": (2, 30),
-    "¿Pregunta 3?\n1. Ut enim ad minim\n2. Veniam, quis nostrud\n3. Exercitation ullamco\n4. Laboris nisi": (2, 25),
-} (Preguntas en desarrollo)
+@bot.command()
+@commands.has_role("Co-founder")
+async def logs(ctx, action, channel_name=None):
 ```
 
-###### Comando
+#### 5. Reproducción de Música (WIP)
 
-- `-encuesta`: Inicia la encuesta para el usuario que ejecuta el comando.
+##### Comando `-play`
+Reproduce música desde una URL de YouTube en el canal de voz del usuario.
 
-##### 3. Logging de Mensajes
-
-El bot almacena mensajes y puede listar los canales con logs y guardar los logs de un canal específico en un archivo JSON.
-
-###### Comandos
-
-- `-logs dump <channel_name>`: Guarda los logs del canal especificado en un archivo JSON.
-- `-logs list channels`: Lista los canales que tienen logs almacenados.
-
-##### 4. Reproducción de Música
-
-**Nota: Esta funcionalidad no está completamente funcional y puede requerir ajustes adicionales.**
-
-El bot puede unirse a un canal de voz y reproducir música desde YouTube.
-
-###### Comandos
-
-- `-play <url>`: Reproduce música desde la URL de YouTube proporcionada.
-- `-skip`: Salta la canción actual.
-
-##### 5. Escaneo de URLs y Archivos
-
-El bot puede escanear URLs y archivos adjuntos utilizando la API de VirusTotal. **Nota: Esta funcionalidad está en proceso y puede requerir ajustes adicionales.**
-
-###### Comandos
-
-- `-scanurl <url>`: Escanea la URL proporcionada utilizando VirusTotal.
-- `-scanfile`: Escanea el archivo adjunto utilizando VirusTotal.
-
-##### 6. Comando Ping
-
-El bot responde con "pong" para verificar que está funcionando correctamente.
-
-###### Comando
-
-- `-ping`: Responde con "pong".
-
-#### Ejemplo de Uso
-
-```sh
-# Correr el bot
-python bot.py
+```python
+@bot.command()
+async def play(ctx, url):
 ```
 
-En Discord, puedes usar los siguientes comandos:
+##### Comando `-skip`
+Detiene la reproducción actual y salta a la siguiente canción.
 
-- `-ping`: Verifica el funcionamiento del bot.
-- `-encuesta`: Inicia la encuesta.
-- `-logs dump <channel_name>`: Guarda los logs del canal especificado.
-- `-logs list channels`: Lista los canales con logs.
-- `-play <url>`: (No funcional) Reproduce música desde la URL.
-- `-skip`: (No funcional) Salta la canción actual.
-- `-scanurl <url>`: Escanea la URL.
-- `-scanfile`: Escanea el archivo adjunto.
+```python
+@bot.command()
+async def skip(ctx):
+```
 
-### Notas
+#### 6. Escaneo de IP y URL con VirusTotal
 
-- Asegúrate de configurar correctamente los permisos del bot en Discord para que pueda leer y escribir mensajes, gestionar roles, y unirse a canales de voz.
-- Algunas funcionalidades, como la reproducción de música y el escaneo de URLs/archivos, pueden requerir ajustes adicionales y no están completamente funcionales en esta versión.
+##### Comando `-scanip`
+Escanea una IP utilizando la API de VirusTotal y devuelve la puntuación de análisis.
+
+```python
+@bot.command()
+async def scanip(ctx, ip):
+```
+
+##### Comando `-scanurl`
+Escanea una URL utilizando la API de VirusTotal.
+
+```python
+@bot.command()
+async def scanurl(ctx, url):
+```
+
+##### Comando `-scanfile`
+Escanea un archivo adjunto utilizando la API de VirusTotal.
+
+```python
+@bot.command()
+async def scanfile(ctx):
+```
+
+#### 7. Moderación de Mensajes
+
+El bot registra todos los mensajes en un log y los marca como eliminados si contienen palabras de la `BLACKLIST`.
+
+```python
+@bot.event
+async def on_message(message):
+```
+
+### Eventos del Bot
+
+#### `on_ready`
+Se ejecuta cuando el bot se conecta correctamente.
+
+```python
+@bot.event
+async def on_ready():
+```
+
+#### `on_message`
+Se ejecuta cada vez que se envía un mensaje en cualquier canal donde el bot tenga permisos.
+
+```python
+@bot.event
+async def on_message(message):
+```
+
+#### `on_message_delete`
+Marca un mensaje como eliminado en los logs.
+
+```python
+@bot.event
+async def on_message_delete(message):
+```
+
+### Comandos de Administración
+
+##### Comando `-nuke`
+Elimina todos los mensajes de un canal. Solo puede ser ejecutado por usuarios con el rol "Co-founder".
+
+```python
+@bot.command()
+@commands.has_role("Co-founder")
+async def nuke(ctx):
+```
+
+### Ejecución del Bot
+Para ejecutar el bot, asegúrate de tener todas las dependencias instaladas y el archivo `.env` correctamente configurado. Luego, ejecuta el script:
+
+```python
+python ByteLocker.py
+```
+
+### Conclusión
+ByteLocker es un bot versátil que proporciona diversas funcionalidades útiles para la moderación, educación y entretenimiento en servidores de Discord, con un enfoque en la ciberseguridad.
