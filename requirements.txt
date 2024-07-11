@@ -1,0 +1,4 @@
+python-dotenv
+discord
+yt_dlp
+aiohttp
