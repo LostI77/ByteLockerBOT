@@ -1,0 +1,1 @@
+ALLOWED_COMMANDS = ["ls", "pwd", "whoami"]
