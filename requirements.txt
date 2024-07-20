@@ -2,3 +2,4 @@ python-dotenv
 discord
 yt_dlp
 aiohttp
+libsql-experimental
